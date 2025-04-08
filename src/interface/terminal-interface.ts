@@ -1,5 +1,5 @@
-import * as readline from "node:readline";
 import type { AIModelType } from "@domain/ai-model.js";
+import * as readline from "node:readline";
 
 /**
  * Interface para interação com o usuário via terminal
@@ -136,6 +136,7 @@ export class TerminalInterface {
 		const modelTypeMap: Record<AIModelType, string> = {
 			claude: "Claude (Anthropic)",
 			mcp: "Model Context Protocol",
+			openai: "GPT (OpenAI)",
 		};
 
 		return this.selectOption(

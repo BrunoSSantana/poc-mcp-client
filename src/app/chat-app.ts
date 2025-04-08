@@ -1,5 +1,5 @@
 import type { AIAgent } from "@domain/ai-agent.js";
-import type { AIModelConfig, AIModelType } from "@domain/ai-model.js";
+import type { AIModelConfig } from "@domain/ai-model.js";
 import {
 	createAgent,
 	getAvailableModelTypes,
@@ -87,6 +87,27 @@ export class ChatApp {
 				);
 				if (toolName && config.params) {
 					config.params.toolName = toolName;
+				}
+			}
+		} else if (selectedModel === "openai") {
+			// Perguntar se deseja usar configurações personalizadas
+			const useCustomConfig = await this.terminal.confirm(
+				"Deseja configurar parâmetros adicionais para o modelo OpenAI?",
+			);
+
+			if (useCustomConfig) {
+				const model = await this.terminal.input(
+					"Modelo OpenAI (deixe em branco para usar o padrão 'gpt-4o')",
+				);
+				if (model && config.params) {
+					config.params.model = model;
+				}
+
+				const apiKey = await this.terminal.input(
+					"Chave de API da OpenAI (deixe em branco para usar a variável de ambiente)",
+				);
+				if (apiKey && config.params) {
+					config.params.apiKey = apiKey;
 				}
 			}
 		}

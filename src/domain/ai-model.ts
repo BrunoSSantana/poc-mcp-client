@@ -1,7 +1,7 @@
 /**
  * Tipo que representa os modelos de IA disponíveis
  */
-export type AIModelType = "claude" | "mcp";
+export type AIModelType = "claude" | "mcp" | "openai";
 
 /**
  * Interface que define as configurações para inicialização de um modelo de IA
