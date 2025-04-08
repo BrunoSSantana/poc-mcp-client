@@ -1,5 +1,5 @@
-import type { AIAgent } from "../../domain/ai-agent.js";
-import type { AIModelConfig, AIModelType } from "../../domain/ai-model.js";
+import type { AIAgent } from "@domain/ai-agent.js";
+import type { AIModelConfig, AIModelType } from "@domain/ai-model.js";
 import { AnthropicAgent } from "./anthropic-agent.js";
 import { MCPAgent } from "./mcp-agent.js";
 

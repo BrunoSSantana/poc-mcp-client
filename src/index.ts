@@ -1,5 +1,5 @@
 import { config } from "dotenv";
-import { ChatApp } from "./app/chat-app.js";
+import { ChatApp } from "@app/chat-app.js";
 
 // Carrega variáveis de ambiente do arquivo .env
 config();

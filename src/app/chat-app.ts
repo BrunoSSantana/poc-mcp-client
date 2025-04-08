@@ -1,10 +1,10 @@
-import type { AIAgent } from "../domain/ai-agent.js";
-import type { AIModelConfig, AIModelType } from "../domain/ai-model.js";
+import type { AIAgent } from "@domain/ai-agent.js";
+import type { AIModelConfig, AIModelType } from "@domain/ai-model.js";
 import {
 	createAgent,
 	getAvailableModelTypes,
-} from "../infra/ai/ai-agent-factory.js";
-import { TerminalInterface } from "../interface/terminal-interface.js";
+} from "@infra/ai/ai-agent-factory.js";
+import { TerminalInterface } from "@interface/terminal-interface.js";
 
 /**
  * Aplicação principal de chat que coordena a interação entre o usuário e o agente de IA

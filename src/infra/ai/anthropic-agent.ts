@@ -1,5 +1,5 @@
-import type { AIAgent } from "../../domain/ai-agent.js";
 import Anthropic from "@anthropic-ai/sdk";
+import type { AIAgent } from "@domain/ai-agent.js";
 
 /**
  * Implementação do agente de IA utilizando o serviço Anthropic (Claude)
@@ -52,9 +52,9 @@ export class AnthropicAgent implements AIAgent {
 			// Verificando e extraindo o texto da resposta de forma segura
 			if (response.content[0] && "text" in response.content[0]) {
 				return response.content[0].text;
-			} else {
-				return JSON.stringify(response.content[0]);
 			}
+
+			return JSON.stringify(response.content[0]);
 		} catch (error) {
 			console.error("Error sending message to Anthropic:", error);
 			throw new Error(
