@@ -1,5 +1,5 @@
 import * as readline from "node:readline";
-import type { AIModelType } from "../domain/AIModel.js";
+import type { AIModelType } from "../domain/ai-model.js";
 
 /**
  * Interface para interação com o usuário via terminal

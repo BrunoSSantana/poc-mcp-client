@@ -1,10 +1,10 @@
-import type { AIAgent } from "../domain/AIAgent.js";
-import type { AIModelConfig, AIModelType } from "../domain/AIModel.js";
+import type { AIAgent } from "../domain/ai-agent.js";
+import type { AIModelConfig, AIModelType } from "../domain/ai-model.js";
 import {
 	createAgent,
 	getAvailableModelTypes,
-} from "../infra/ai/AIAgentFactory.js";
-import { TerminalInterface } from "../interface/TerminalInterface.js";
+} from "../infra/ai/ai-agent-factory.js";
+import { TerminalInterface } from "../interface/terminal-interface.js";
 
 /**
  * Aplicação principal de chat que coordena a interação entre o usuário e o agente de IA
@@ -64,14 +64,14 @@ export class ChatApp {
 				const model = await this.terminal.input(
 					"Modelo Claude (deixe em branco para usar o padrão 'claude-3-sonnet-20240229')",
 				);
-				if (model) {
+				if (model && config.params) {
 					config.params.model = model;
 				}
 
 				const apiKey = await this.terminal.input(
 					"Chave de API da Anthropic (deixe em branco para usar a variável de ambiente)",
 				);
-				if (apiKey) {
+				if (apiKey && config.params) {
 					config.params.apiKey = apiKey;
 				}
 			}
@@ -85,7 +85,7 @@ export class ChatApp {
 				const toolName = await this.terminal.input(
 					"Nome da ferramenta para chat (deixe em branco para usar o padrão 'get_employees')",
 				);
-				if (toolName) {
+				if (toolName && config.params) {
 					config.params.toolName = toolName;
 				}
 			}

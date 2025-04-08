@@ -1,7 +1,7 @@
-import type { AIAgent } from "../../domain/AIAgent.js";
-import type { AIModelConfig, AIModelType } from "../../domain/AIModel.js";
-import { AnthropicAgent } from "./AnthropicAgent.js";
-import { MCPAgent } from "./MCPAgent.js";
+import type { AIAgent } from "../../domain/ai-agent.js";
+import type { AIModelConfig, AIModelType } from "../../domain/ai-model.js";
+import { AnthropicAgent } from "./anthropic-agent.js";
+import { MCPAgent } from "./mcp-agent.js";
 
 /**
  * Cria um agente de IA com base na configuração fornecida

@@ -1,4 +1,4 @@
-import type { AIAgent } from "../../domain/AIAgent.js";
+import type { AIAgent } from "../../domain/ai-agent.js";
 import Anthropic from "@anthropic-ai/sdk";
 
 /**
@@ -49,7 +49,12 @@ export class AnthropicAgent implements AIAgent {
 				messages: [{ role: "user", content: message }],
 			});
 
-			return response.content[0].text;
+			// Verificando e extraindo o texto da resposta de forma segura
+			if (response.content[0] && "text" in response.content[0]) {
+				return response.content[0].text;
+			} else {
+				return JSON.stringify(response.content[0]);
+			}
 		} catch (error) {
 			console.error("Error sending message to Anthropic:", error);
 			throw new Error(
