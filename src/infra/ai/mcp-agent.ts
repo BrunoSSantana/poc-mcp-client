@@ -2,7 +2,13 @@ import Anthropic from "@anthropic-ai/sdk";
 import type { AIAgent } from "@domain/ai-agent.js";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js";
+import OpenAI from "openai";
 import { z } from "zod";
+
+/**
+ * Tipo para identificar qual provedor de LLM usar
+ */
+export type LLMProvider = "anthropic" | "openai";
 
 /**
  * Interface que representa uma ferramenta MCP disponível
@@ -14,18 +20,43 @@ interface MCPTool {
 }
 
 /**
+ * Configuração para o provedor OpenAI
+ */
+interface OpenAIConfig {
+	type: "openai";
+	apiKey?: string;
+	model?: string;
+}
+
+/**
+ * Configuração para o provedor Anthropic
+ */
+interface AnthropicConfig {
+	type: "anthropic";
+	apiKey?: string;
+	model?: string;
+}
+
+/**
+ * Tipo união para configuração de LLM
+ */
+type LLMConfig = OpenAIConfig | AnthropicConfig;
+
+/**
  * Implementação do agente de IA utilizando o Model Context Protocol
  */
 export class MCPAgent implements AIAgent {
 	private client: Client | null = null;
 	private transport: StdioClientTransport | null = null;
-	private llmClient: Anthropic | null = null;
+	private anthropicClient: Anthropic | null = null;
+	private openaiClient: OpenAI | null = null;
 	private readonly config: {
 		command: string;
 		args: string[];
 	};
 	private readonly defaultToolName: string;
 	private availableTools: MCPTool[] = [];
+	private readonly llmProvider: LLMProvider;
 	private readonly llmApiKey: string;
 	private readonly llmModel: string;
 
@@ -41,10 +72,7 @@ export class MCPAgent implements AIAgent {
 			args: string[];
 		},
 		defaultToolName = "get_employees",
-		llmConfig?: {
-			apiKey?: string;
-			model?: string;
-		},
+		llmConfig: LLMConfig = { type: "anthropic" },
 	) {
 		this.config = config || {
 			command: "npm",
@@ -59,12 +87,23 @@ export class MCPAgent implements AIAgent {
 			],
 		};
 		this.defaultToolName = defaultToolName;
-		this.llmApiKey = llmConfig?.apiKey || process.env.ANTHROPIC_API_KEY || "";
-		this.llmModel = llmConfig?.model || "claude-3-sonnet-20240229";
+		this.llmProvider = llmConfig.type;
+
+		// Configuração baseada no provedor
+		if (this.llmProvider === "openai") {
+			const openaiConfig = llmConfig as OpenAIConfig;
+			this.llmApiKey = openaiConfig.apiKey || process.env.OPENAI_API_KEY || "";
+			this.llmModel = openaiConfig.model || "gpt-4o";
+		} else {
+			const anthropicConfig = llmConfig as AnthropicConfig;
+			this.llmApiKey =
+				anthropicConfig.apiKey || process.env.ANTHROPIC_API_KEY || "";
+			this.llmModel = anthropicConfig.model || "claude-3-5-sonnet-20241022";
+		}
 
 		if (!this.llmApiKey) {
 			console.warn(
-				"LLM API key não fornecida. A interpretação avançada de mensagens não estará disponível.",
+				`API key para ${this.llmProvider} não fornecida. A interpretação avançada de mensagens não estará disponível.`,
 			);
 		}
 	}
@@ -109,10 +148,17 @@ export class MCPAgent implements AIAgent {
 
 			// Inicializa o cliente LLM se a API key estiver disponível
 			if (this.llmApiKey) {
-				this.llmClient = new Anthropic({
-					apiKey: this.llmApiKey,
-				});
-				console.log("Cliente LLM inicializado com sucesso.");
+				if (this.llmProvider === "openai") {
+					this.openaiClient = new OpenAI({
+						apiKey: this.llmApiKey,
+					});
+					console.log("Cliente OpenAI inicializado com sucesso.");
+				} else {
+					this.anthropicClient = new Anthropic({
+						apiKey: this.llmApiKey,
+					});
+					console.log("Cliente Anthropic inicializado com sucesso.");
+				}
 			}
 		} catch (error) {
 			console.error("Error initializing MCP client:", error);
@@ -225,56 +271,224 @@ Se nenhuma ferramenta específica for mencionada ou se a intenção não estiver
 	}
 
 	/**
-	 * Usa o LLM para analisar a mensagem do usuário e determinar a ferramenta e os parâmetros
-	 * @param message - Mensagem do usuário
-	 * @returns Objeto com a ferramenta selecionada e os parâmetros
+	 * Gera um prompt para contextualizar a resposta da ferramenta MCP com a pergunta do usuário
+	 * @param userMessage - Mensagem original do usuário
+	 * @param toolName - Nome da ferramenta utilizada
+	 * @param mcpResponse - Resposta obtida do servidor MCP
+	 * @returns O prompt para gerar a resposta contextualizada
 	 */
-	private async analyzeLLMResponse(
-		message: string,
-	): Promise<{ toolName: string; params: Record<string, unknown> }> {
-		if (!this.llmClient) {
-			throw new Error("LLM client not initialized");
+	private generateContextualResponsePrompt(
+		userMessage: string,
+		toolName: string,
+		mcpResponse: unknown,
+	): string {
+		const responseStr =
+			typeof mcpResponse === "object"
+				? JSON.stringify(mcpResponse, null, 2)
+				: String(mcpResponse);
+
+		return `
+Você é um assistente especializado em criar respostas claras e úteis baseadas em dados.
+
+Pergunta do usuário: "${userMessage}"
+
+Para responder à pergunta, uma ferramenta chamada "${toolName}" foi utilizada, e retornou os seguintes dados:
+---
+${responseStr}
+---
+
+Por favor, crie uma resposta útil, clara e natural para o usuário, baseada nesses dados. 
+Sua resposta deve:
+1. Abordar diretamente a pergunta ou solicitação original do usuário
+2. Usar as informações fornecidas pela ferramenta para fundamentar sua resposta
+3. Ser concisa e direta, evitando explicações desnecessárias sobre como a informação foi obtida
+4. Ter um tom conversacional e útil
+
+Se os dados não forem suficientes para responder completamente à pergunta, indique o que você pode responder com base nos dados disponíveis e o que está faltando.
+`;
+	}
+
+	/**
+	 * Usa o OpenAI para processar a resposta do MCP e gerar uma resposta contextualizada
+	 * @param userMessage - Mensagem original do usuário
+	 * @param toolName - Nome da ferramenta utilizada
+	 * @param mcpResponse - Resposta obtida do servidor MCP
+	 * @returns Resposta contextualizada
+	 */
+	private async generateOpenAIContextualResponse(
+		userMessage: string,
+		toolName: string,
+		mcpResponse: unknown,
+	): Promise<string> {
+		if (!this.openaiClient) {
+			throw new Error("OpenAI client not initialized");
 		}
 
 		try {
-			const prompt = this.generateToolSelectionPrompt(message);
+			const prompt = this.generateContextualResponsePrompt(
+				userMessage,
+				toolName,
+				mcpResponse,
+			);
 
-			const response = await this.llmClient.messages.create({
+			const response = await this.openaiClient.chat.completions.create({
+				model: this.llmModel,
+				messages: [
+					{
+						role: "system",
+						content:
+							"Você é um assistente útil que fornece respostas claras e diretas baseadas em dados.",
+					},
+					{ role: "user", content: prompt },
+				],
+			});
+
+			// Verificando e extraindo o texto da resposta de forma segura
+			if (!response.choices[0]?.message?.content) {
+				throw new Error("Formato de resposta do OpenAI inesperado");
+			}
+
+			return response.choices[0].message.content.trim();
+		} catch (error) {
+			console.warn("Erro ao gerar resposta contextualizada com OpenAI:", error);
+			return `Não foi possível elaborar uma resposta contextualizada. Aqui estão os dados brutos: ${JSON.stringify(mcpResponse)}`;
+		}
+	}
+
+	/**
+	 * Usa o Anthropic para processar a resposta do MCP e gerar uma resposta contextualizada
+	 * @param userMessage - Mensagem original do usuário
+	 * @param toolName - Nome da ferramenta utilizada
+	 * @param mcpResponse - Resposta obtida do servidor MCP
+	 * @returns Resposta contextualizada
+	 */
+	private async generateAnthropicContextualResponse(
+		userMessage: string,
+		toolName: string,
+		mcpResponse: unknown,
+	): Promise<string> {
+		if (!this.anthropicClient) {
+			throw new Error("Anthropic client not initialized");
+		}
+
+		try {
+			const prompt = this.generateContextualResponsePrompt(
+				userMessage,
+				toolName,
+				mcpResponse,
+			);
+
+			const response = await this.anthropicClient.messages.create({
 				model: this.llmModel,
 				max_tokens: 1000,
 				system:
-					"Você é um assistente especializado em NLP, focado em extrair a intenção do usuário e mapear para ferramentas de API específicas. Responda apenas com o formato JSON solicitado.",
+					"Você é um assistente útil que fornece respostas claras e diretas baseadas em dados.",
 				messages: [{ role: "user", content: prompt }],
 			});
 
 			// Verificando e extraindo o texto da resposta de forma segura
 			if (!response.content[0] || !("text" in response.content[0])) {
-				throw new Error("Formato de resposta do LLM inesperado");
+				throw new Error("Formato de resposta do Anthropic inesperado");
 			}
 
-			const responseText = response.content[0].text.trim();
-			const jsonMatch =
-				responseText.match(/```json\s*([\s\S]*?)\s*```/) ||
-				responseText.match(/\{[\s\S]*\}/);
+			return response.content[0].text.trim();
+		} catch (error) {
+			console.warn(
+				"Erro ao gerar resposta contextualizada com Anthropic:",
+				error,
+			);
+			return `Não foi possível elaborar uma resposta contextualizada. Aqui estão os dados brutos: ${JSON.stringify(mcpResponse)}`;
+		}
+	}
 
-			if (!jsonMatch) {
-				throw new Error(
-					"Não foi possível extrair um JSON válido da resposta do LLM",
+	/**
+	 * Processa a resposta do MCP para gerar uma resposta contextualizada
+	 * @param userMessage - Mensagem original do usuário
+	 * @param toolName - Nome da ferramenta utilizada
+	 * @param mcpResponse - Resposta obtida do servidor MCP
+	 * @returns Resposta contextualizada
+	 */
+	private async processResponseWithLLM(
+		userMessage: string,
+		toolName: string,
+		mcpResponse: unknown,
+	): Promise<string> {
+		try {
+			// Verifica qual cliente LLM está disponível e usa-o para gerar a resposta
+			if (this.llmProvider === "openai" && this.openaiClient) {
+				return this.generateOpenAIContextualResponse(
+					userMessage,
+					toolName,
+					mcpResponse,
 				);
 			}
 
-			const jsonString = jsonMatch[0].replace(/```json|```/g, "").trim();
+			if (this.llmProvider === "anthropic" && this.anthropicClient) {
+				return this.generateAnthropicContextualResponse(
+					userMessage,
+					toolName,
+					mcpResponse,
+				);
+			}
+
+			// Se nenhum LLM estiver disponível, retorna os dados brutos
+			return typeof mcpResponse === "object"
+				? JSON.stringify(mcpResponse, null, 2)
+				: String(mcpResponse);
+		} catch (error) {
+			console.warn("Erro ao processar resposta com LLM:", error);
+			return typeof mcpResponse === "object"
+				? JSON.stringify(mcpResponse, null, 2)
+				: String(mcpResponse);
+		}
+	}
+
+	/**
+	 * Usa o OpenAI para analisar a mensagem do usuário e determinar a ferramenta e os parâmetros
+	 * @param message - Mensagem do usuário
+	 * @returns Objeto com a ferramenta selecionada e os parâmetros
+	 */
+	private async analyzeOpenAIResponse(message: string): Promise<{
+		toolName: string;
+		params: Record<string, unknown>;
+	}> {
+		if (!this.openaiClient) {
+			throw new Error("OpenAI client not initialized");
+		}
+
+		try {
+			const prompt = this.generateToolSelectionPrompt(message);
+
+			const response = await this.openaiClient.chat.completions.create({
+				model: this.llmModel,
+				messages: [
+					{
+						role: "system",
+						content:
+							"Você é um assistente especializado em NLP, focado em extrair a intenção do usuário e mapear para ferramentas de API específicas. Responda apenas com o formato JSON solicitado.",
+					},
+					{ role: "user", content: prompt },
+				],
+				response_format: { type: "json_object" },
+			});
+
+			// Verificando e extraindo o texto da resposta de forma segura
+			if (!response.choices[0]?.message?.content) {
+				throw new Error("Formato de resposta do OpenAI inesperado");
+			}
+
+			const jsonString = response.choices[0].message.content.trim();
 			const result = JSON.parse(jsonString);
 
 			// Verificar se o resultado contém os campos esperados
 			if (!result.toolName || !result.parameters) {
-				throw new Error("Resposta do LLM não contém os campos necessários");
+				throw new Error("Resposta do OpenAI não contém os campos necessários");
 			}
 
 			// Verificar se a ferramenta selecionada existe
 			if (!this.availableTools.some((tool) => tool.name === result.toolName)) {
 				console.warn(
-					`Ferramenta "${result.toolName}" selecionada pelo LLM não existe. Usando ferramenta padrão.`,
+					`Ferramenta "${result.toolName}" selecionada pelo OpenAI não existe. Usando ferramenta padrão.`,
 				);
 				return {
 					toolName: this.defaultToolName,
@@ -287,7 +501,81 @@ Se nenhuma ferramenta específica for mencionada ou se a intenção não estiver
 				params: result.parameters,
 			};
 		} catch (error) {
-			console.warn("Erro ao analisar resposta do LLM:", error);
+			console.warn("Erro ao analisar resposta do OpenAI:", error);
+			return {
+				toolName: this.defaultToolName,
+				params: { message },
+			};
+		}
+	}
+
+	/**
+	 * Usa o Anthropic para analisar a mensagem do usuário e determinar a ferramenta e os parâmetros
+	 * @param message - Mensagem do usuário
+	 * @returns Objeto com a ferramenta selecionada e os parâmetros
+	 */
+	private async analyzeAnthropicResponse(message: string): Promise<{
+		toolName: string;
+		params: Record<string, unknown>;
+	}> {
+		if (!this.anthropicClient) {
+			throw new Error("Anthropic client not initialized");
+		}
+
+		try {
+			const prompt = this.generateToolSelectionPrompt(message);
+
+			const response = await this.anthropicClient.messages.create({
+				model: this.llmModel,
+				max_tokens: 1000,
+				system:
+					"Você é um assistente especializado em NLP, focado em extrair a intenção do usuário e mapear para ferramentas de API específicas. Responda apenas com o formato JSON solicitado.",
+				messages: [{ role: "user", content: prompt }],
+			});
+
+			// Verificando e extraindo o texto da resposta de forma segura
+			if (!response.content[0] || !("text" in response.content[0])) {
+				throw new Error("Formato de resposta do Anthropic inesperado");
+			}
+
+			const responseText = response.content[0].text.trim();
+			const jsonMatch =
+				responseText.match(/```json\s*([\s\S]*?)\s*```/) ||
+				responseText.match(/\{[\s\S]*\}/);
+
+			if (!jsonMatch) {
+				throw new Error(
+					"Não foi possível extrair um JSON válido da resposta do Anthropic",
+				);
+			}
+
+			const jsonString = jsonMatch[0].replace(/```json|```/g, "").trim();
+			const result = JSON.parse(jsonString);
+
+			// Verificar se o resultado contém os campos esperados
+			if (!result.toolName || !result.parameters) {
+				throw new Error(
+					"Resposta do Anthropic não contém os campos necessários",
+				);
+			}
+
+			// Verificar se a ferramenta selecionada existe
+			if (!this.availableTools.some((tool) => tool.name === result.toolName)) {
+				console.warn(
+					`Ferramenta "${result.toolName}" selecionada pelo Anthropic não existe. Usando ferramenta padrão.`,
+				);
+				return {
+					toolName: this.defaultToolName,
+					params: { message },
+				};
+			}
+
+			return {
+				toolName: result.toolName,
+				params: result.parameters,
+			};
+		} catch (error) {
+			console.warn("Erro ao analisar resposta do Anthropic:", error);
 			return {
 				toolName: this.defaultToolName,
 				params: { message },
@@ -330,13 +618,20 @@ Se nenhuma ferramenta específica for mencionada ou se a intenção não estiver
 		}
 
 		try {
-			// Se o LLM estiver disponível, usa-o para analisar a mensagem
-			if (this.llmClient) {
-				const llmAnalysis = await this.analyzeLLMResponse(message);
-				console.log("Análise do LLM:", llmAnalysis);
+			// Verifica qual cliente LLM está disponível e usa-o para analisar a mensagem
+			if (this.llmProvider === "openai" && this.openaiClient) {
+				const llmAnalysis = await this.analyzeOpenAIResponse(message);
+				console.log("Análise do OpenAI:", llmAnalysis);
 				return llmAnalysis;
 			}
-			// Fallback para o método simples quando o LLM não estiver disponível
+
+			if (this.llmProvider === "anthropic" && this.anthropicClient) {
+				const llmAnalysis = await this.analyzeAnthropicResponse(message);
+				console.log("Análise do Anthropic:", llmAnalysis);
+				return llmAnalysis;
+			}
+
+			// Fallback para o método simples quando nenhum LLM estiver disponível
 			console.log("LLM não disponível, usando método simples de identificação");
 			return this.identifyToolFromMessage(message);
 		} catch (error) {
@@ -385,17 +680,15 @@ Se nenhuma ferramenta específica for mencionada ou se a intenção não estiver
 			throw new Error("MCP client not initialized");
 		}
 
+		console.log("Enviando mensagem para o MCP:", message);
 		try {
 			// Interpreta a mensagem para determinar qual ferramenta usar
 			const { toolName, params } = await this.interpretMessage(message);
-
+			console.log("Ferramenta selecionada:", toolName);
+			console.log("Parâmetros:", params);
 			// Valida os parâmetros contra o schema da ferramenta
 			const validatedParams = this.validateParameters(toolName, params);
-
-			console.log(
-				`Usando ferramenta "${toolName}" com parâmetros:`,
-				validatedParams,
-			);
+			console.log("Parâmetros validados:", validatedParams);
 
 			// Chama a ferramenta com os parâmetros interpretados e validados
 			const result = await this.client.callTool({
@@ -403,9 +696,14 @@ Se nenhuma ferramenta específica for mencionada ou se a intenção não estiver
 				arguments: validatedParams,
 			});
 
-			return typeof result === "object"
-				? JSON.stringify(result, null, 2)
-				: String(result);
+			// Processa a resposta do MCP usando LLM para criar uma resposta contextualizada
+			const contextualResponse = await this.processResponseWithLLM(
+				message,
+				toolName,
+				result,
+			);
+
+			return contextualResponse;
 		} catch (error) {
 			console.error("Error sending message to MCP server:", error);
 			throw new Error(
@@ -424,7 +722,8 @@ Se nenhuma ferramenta específica for mencionada ou se a intenção não estiver
 			this.transport = null;
 		}
 
-		// Não é necessário fechar o cliente LLM, mas definimos como null
-		this.llmClient = null;
+		// Não é necessário fechar os clientes LLM, mas definimos como null
+		this.anthropicClient = null;
+		this.openaiClient = null;
 	}
 }
