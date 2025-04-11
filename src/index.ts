@@ -1,8 +1,5 @@
-import { config } from "dotenv";
+import "dotenv/config";
 import { ChatApp } from "@app/chat-app.js";
-
-// Carrega variáveis de ambiente do arquivo .env
-config();
 
 async function main(): Promise<void> {
 	try {
