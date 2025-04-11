@@ -22,6 +22,11 @@ export function createAgent(config: AIModelConfig): AIAgent {
 					| { command: string; args: string[] }
 					| undefined,
 				config.params?.toolName as string | undefined,
+				{
+					type: "anthropic",
+					apiKey: config.params?.apiKey as string | undefined,
+					model: config.params?.model as string | undefined,
+				},
 			);
 		case "openai":
 			return new OpenAIAgent(

@@ -62,7 +62,7 @@ export class ChatApp {
 
 			if (useCustomConfig) {
 				const model = await this.terminal.input(
-					"Modelo Claude (deixe em branco para usar o padrão 'claude-3-sonnet-20240229')",
+					"Modelo Claude (deixe em branco para usar o padrão 'claude-3-5-sonnet-20241022')",
 				);
 				if (model && config.params) {
 					config.params.model = model;
@@ -148,7 +148,7 @@ export class ChatApp {
 			try {
 				this.terminal.print("\nPensando...");
 				const response = await this.agent.sendMessage(userMessage);
-				this.terminal.printAIResponse(`\nIA: ${response}`);
+				this.terminal.printAIResponse(response);
 			} catch (error) {
 				this.terminal.printError(
 					`Erro ao processar mensagem: ${(error as Error).message}`,

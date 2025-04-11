@@ -14,7 +14,7 @@ export class AnthropicAgent implements AIAgent {
 	 * @param apiKey - Chave de API da Anthropic (opcional, usa variável de ambiente se não fornecida)
 	 * @param model - Modelo a ser utilizado (opcional, usa Claude 3 Sonnet por padrão)
 	 */
-	constructor(apiKey?: string, model = "claude-3-sonnet-20240229") {
+	constructor(apiKey?: string, model = "claude-3-5-sonnet-20241022") {
 		this.apiKey = apiKey || process.env.ANTHROPIC_API_KEY || "";
 		this.model = model;
 
