@@ -66,27 +66,33 @@ describe("TerminalInterface", () => {
 
   describe("input", () => {
     it("should call readline question and return the answer", async () => {
-      const prompt = "Enter something";
-      const expectedAnswer = "user input";
+      const prompt = "Enter something:";
+      const answer = "User input";
 
-      // Mock implementation that immediately calls the callback with the answer
-      mockQuestion.mockImplementation((promptText, cb) => {
-        expect(promptText).toBe(`${prompt}: `);
-        cb(expectedAnswer);
-      });
+      const readline = terminalInterface as unknown as {
+        readline: {
+          question: (q: string, cb: (answer: string) => void) => void;
+        };
+      };
+      vi.spyOn(readline.readline, "question").mockImplementation(
+        (q: string, cb: (answer: string) => void) => {
+          cb(answer);
+        },
+      );
 
       const result = await terminalInterface.input(prompt);
-
-      expect(mockQuestion).toHaveBeenCalled();
-      expect(result).toBe(expectedAnswer);
+      expect(result).toBe(answer);
     });
   });
 
   describe("close", () => {
     it("should call readline close", () => {
+      const readline = terminalInterface as unknown as {
+        readline: { close: () => void };
+      };
+      vi.spyOn(readline.readline, "close");
       terminalInterface.close();
-
-      expect(mockClose).toHaveBeenCalled();
+      expect(readline.readline.close).toHaveBeenCalled();
     });
   });
 

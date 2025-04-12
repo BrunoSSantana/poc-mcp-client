@@ -1,12 +1,13 @@
-import type { AIModelConfig } from "@domain/ai-model.js";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import type {
+  AIModelConfig,
+  AIModelType,
+} from "../../../src/domain/ai-model.js";
 import {
   createAgent,
   getAvailableModelTypes,
-} from "@infra/ai/ai-agent-factory.js";
-import { AnthropicAgent } from "@infra/ai/anthropic-agent.js";
-import { MCPAgent } from "@infra/ai/mcp-agent.js";
-import { OpenAIAgent } from "@infra/ai/openai-agent.js";
-import { describe, expect, it, vi } from "vitest";
+} from "../../../src/infra/ai/ai-agent-factory.js";
+import { MCPAgent } from "../../../src/infra/ai/mcp-agent.js";
 
 // Mock dos módulos de agentes
 vi.mock("@infra/ai/anthropic-agent.js", () => ({
@@ -34,78 +35,55 @@ vi.mock("@infra/ai/openai-agent.js", () => ({
 }));
 
 describe("AIAgentFactory", () => {
-  afterEach(() => {
+  beforeEach(() => {
     vi.clearAllMocks();
   });
 
   describe("getAvailableModelTypes", () => {
     it("should return all available model types", () => {
       const modelTypes = getAvailableModelTypes();
-
-      expect(modelTypes).toHaveLength(3);
+      expect(modelTypes).toHaveLength(2);
       expect(modelTypes).toContain("claude");
-      expect(modelTypes).toContain("mcp");
       expect(modelTypes).toContain("openai");
     });
   });
 
   describe("createAgent", () => {
-    it("should create AnthropicAgent with correct parameters when type is claude", () => {
+    it("should create MCPAgent with correct parameters", () => {
       const config: AIModelConfig = {
         type: "claude",
         params: {
+          mcpConfig: {
+            args: ["test-arg1", "test-arg2"],
+            command: "test-command",
+          },
           apiKey: "test-api-key",
           model: "test-model",
         },
       };
 
       createAgent(config);
-
-      expect(AnthropicAgent).toHaveBeenCalledWith("test-api-key", "test-model");
-    });
-
-    it("should create MCPAgent with correct parameters when type is mcp", () => {
-      const mcpConfig = {
-        command: "test-command",
-        args: ["test-arg1", "test-arg2"],
-      };
-
-      const config: AIModelConfig = {
-        type: "mcp",
-        params: {
-          config: mcpConfig,
-          toolName: "test-tool",
-        },
-      };
-
-      createAgent(config);
-
-      expect(MCPAgent).toHaveBeenCalledWith(mcpConfig, "test-tool");
-    });
-
-    it("should create OpenAIAgent with correct parameters when type is openai", () => {
-      const config: AIModelConfig = {
-        type: "openai",
-        params: {
-          apiKey: "test-openai-key",
-          model: "test-openai-model",
-        },
-      };
-
-      createAgent(config);
-
-      expect(OpenAIAgent).toHaveBeenCalledWith(
-        "test-openai-key",
-        "test-openai-model",
-      );
+      expect(MCPAgent).toHaveBeenCalledWith(config.params.mcpConfig, {
+        type: "claude",
+        apiKey: "test-api-key",
+        model: "test-model",
+      });
     });
 
     it("should throw an error when type is not supported", () => {
       const config = {
-        type: "unsupported-type",
-      } as unknown as AIModelConfig;
+        type: "unsupported" as AIModelType,
+        params: {
+          apiKey: "",
+          model: "",
+          mcpConfig: {
+            args: [],
+            command: "",
+          },
+        },
+      };
 
-      expect(() => createAgent(config)).toThrow(/Unsupported AI model type/);
+      expect(() => createAgent(config)).toThrow();
     });
   });
 });

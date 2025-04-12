@@ -23,9 +23,16 @@ Crie o arquivo `.env` na raiz do projeto com base no `.env.example`:
 ```
 # Necessário para o modelo Claude
 CLAUDE_API_KEY=sua_chave_api_anthropic
+CLAUDE_MODEL=claude-3-5-sonnet-20241022
 
 # Necessário para o modelo GPT
 OPENAI_API_KEY=sua_chave_api_openai
+OPENAI_MODEL=gpt-4o
+
+# Configuração do MCP
+MCP_API_KEY=sua_chave_api_mcp
+MCP_GRAPHQL_API=sua_url_graphql_mcp
+MCP_MODEL=mcp-default
 ```
 
 ## Executando a aplicação
@@ -37,7 +44,7 @@ pnpm start
 ```
 
 Após iniciar a aplicação, você poderá:
-1. Selecionar o modelo de IA (Claude, GPT ou MCP)
+1. Selecionar o modelo de IA (Claude ou GPT)
 2. Configurar parâmetros adicionais para o modelo selecionado
 3. Iniciar a conversa
 4. Digitar "sair" a qualquer momento para encerrar o chat
@@ -48,7 +55,6 @@ Após iniciar a aplicação, você poderá:
 - Suporte para diferentes modelos de IA:
   - Claude (Anthropic) - Requer chave de API
   - GPT (OpenAI) - Requer chave de API
-  - Model Context Protocol (MCP) - Usa o servidor MCP local
 - Seleção do modelo de IA no início da interação
 - Configuração de parâmetros adicionais para cada modelo
 - Arquitetura desacoplada com componentes separados
@@ -71,6 +77,35 @@ O projeto segue uma arquitetura limpa com separação clara de responsabilidades
 - `app`: Coordenação de fluxos de alto nível
   - `chat-app.ts`: Classe principal que coordena a aplicação
 
+## Fluxo do MCP Client
+
+O MCP Client segue um fluxo inteligente para processar prompts do usuário:
+
+1. **Recebimento do Prompt**: O usuário envia um prompt inicial para o sistema.
+
+2. **Análise de Servidores e Tools**:
+   - O sistema lista os servidores MCP disponíveis
+   - Identifica as tools disponíveis em cada servidor
+
+3. **Avaliação de Tools**:
+   - Analisa as tools disponíveis com base na descrição do prompt
+   - Bifurca em dois caminhos possíveis:
+     - Tool útil encontrada
+     - Nenhuma tool útil encontrada
+
+4. **Processamento com Tool**:
+   Se uma tool útil é encontrada:
+   - Gera input específico para a tool baseado no prompt original
+   - Executa a tool com o input gerado
+   - Recebe a resposta da tool
+   - AI formula uma resposta final baseada no resultado da tool
+
+5. **Processamento sem Tool**:
+   Se nenhuma tool útil é encontrada:
+   - A AI procede com uma resposta padrão
+
+Este fluxo garante que o sistema utilize de forma eficiente as tools disponíveis quando apropriado, mantendo a capacidade de fornecer respostas mesmo quando nenhuma tool específica se aplica ao prompt.
+
 ### Path Aliases
 
 O projeto utiliza path aliases para melhorar a legibilidade e manutenibilidade do código:
@@ -86,6 +121,28 @@ Exemplos de importação:
 import { AIAgent } from "@domain/ai-agent.js";
 import { ChatApp } from "@app/chat-app.js";
 ```
+
+## Testes
+
+O projeto inclui testes unitários para todos os componentes principais:
+
+```bash
+# Executar todos os testes
+pnpm test
+
+# Executar testes em modo watch
+pnpm test:watch
+
+# Executar testes com cobertura
+pnpm test:coverage
+```
+
+A estrutura de testes segue a mesma organização do código fonte:
+
+- `test/domain/`: Testes para interfaces e tipos
+- `test/infra/`: Testes para implementações concretas
+- `test/interface/`: Testes para componentes de interface
+- `test/app/`: Testes para fluxos de aplicação
 
 ## Extensibilidade
 
