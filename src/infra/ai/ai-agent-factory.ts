@@ -10,40 +10,40 @@ import { OpenAIAgent } from "./openai-agent.js";
  * @returns Instância do agente de IA
  */
 export function createAgent(config: AIModelConfig): AIAgent {
-	switch (config.type) {
-		case "claude":
-			return new AnthropicAgent(
-				config.params?.apiKey as string | undefined,
-				config.params?.model as string | undefined,
-			);
-		case "mcp":
-			return new MCPAgent(
-				{
-					command: "npm",
-					args: [
-						"exec",
-						"--",
-						"@smithery/cli@latest",
-						"run",
-						"@BrunoSSantana/poc-simple-mcp-server",
-						"--config",
-						'{"apiKey":"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRpdG1nYWtqZGhwc3JrdmFjbGVmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDMzNDE5OTUsImV4cCI6MjA1ODkxNzk5NX0.kbmZ0rbttSidrCHb2u6WWD5ummygL4Kb23usFXzv0Xo","graphQLApi":"https://titmgakjdhpsrkvaclef.supabase.co/graphql/v1"}',
-					],
-				} as MCPClientConfig,
-				{
-					type: "anthropic",
-					apiKey: config.params?.apiKey as string | undefined,
-					model: config.params?.model as string | undefined,
-				},
-			);
-		case "openai":
-			return new OpenAIAgent(
-				config.params?.apiKey as string | undefined,
-				config.params?.model as string | undefined,
-			);
-		default:
-			throw new Error(`Unsupported AI model type: ${config.type}`);
-	}
+  switch (config.type) {
+    case "claude":
+      return new AnthropicAgent(
+        config.params?.apiKey as string | undefined,
+        config.params?.model as string | undefined,
+      );
+    case "mcp":
+      return new MCPAgent(
+        {
+          command: "npm",
+          args: [
+            "exec",
+            "--",
+            "@smithery/cli@latest",
+            "run",
+            "@BrunoSSantana/poc-simple-mcp-server",
+            "--config",
+            '{"apiKey":"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRpdG1nYWtqZGhwc3JrdmFjbGVmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDMzNDE5OTUsImV4cCI6MjA1ODkxNzk5NX0.kbmZ0rbttSidrCHb2u6WWD5ummygL4Kb23usFXzv0Xo","graphQLApi":"https://titmgakjdhpsrkvaclef.supabase.co/graphql/v1"}',
+          ],
+        } as MCPClientConfig,
+        {
+          type: "anthropic",
+          apiKey: config.params?.apiKey as string | undefined,
+          model: config.params?.model as string | undefined,
+        },
+      );
+    case "openai":
+      return new OpenAIAgent(
+        config.params?.apiKey as string | undefined,
+        config.params?.model as string | undefined,
+      );
+    default:
+      throw new Error(`Unsupported AI model type: ${config.type}`);
+  }
 }
 
 /**
@@ -51,5 +51,5 @@ export function createAgent(config: AIModelConfig): AIAgent {
  * @returns Array com os tipos de modelo disponíveis
  */
 export function getAvailableModelTypes(): AIModelType[] {
-	return ["claude", "mcp", "openai"];
+  return ["claude", "mcp", "openai"];
 }
