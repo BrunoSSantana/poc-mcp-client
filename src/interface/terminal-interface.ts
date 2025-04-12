@@ -1,22 +1,11 @@
 import type { AIModelType } from "@domain/ai-model.js";
-import * as readline from "node:readline";
+import inquirer from "inquirer";
+import chalk from "chalk";
 
 /**
  * Interface para interação com o usuário via terminal
  */
 export class TerminalInterface {
-  private rl: readline.Interface;
-
-  /**
-   * Cria uma instância da interface de terminal
-   */
-  constructor() {
-    this.rl = readline.createInterface({
-      input: process.stdin,
-      output: process.stdout,
-    });
-  }
-
   /**
    * Exibe uma mensagem no terminal
    * @param message - Mensagem a ser exibida
@@ -30,7 +19,7 @@ export class TerminalInterface {
    * @param message - Mensagem de erro a ser exibida
    */
   printError(message: string): void {
-    console.error(`\x1b[31m${message}\x1b[0m`);
+    console.error(chalk.red(message));
   }
 
   /**
@@ -38,7 +27,7 @@ export class TerminalInterface {
    * @param message - Mensagem do agente
    */
   printAIResponse(message: string): void {
-    console.log(`\x1b[36m${message}\x1b[0m`);
+    console.log(chalk.cyan(message));
   }
 
   /**
@@ -47,11 +36,14 @@ export class TerminalInterface {
    * @returns Promessa que resolve para a entrada do usuário
    */
   async input(prompt: string): Promise<string> {
-    return new Promise((resolve) => {
-      this.rl.question(`${prompt}: `, (answer) => {
-        resolve(answer);
-      });
-    });
+    const response = await inquirer.prompt([
+      {
+        type: "input",
+        name: "value",
+        message: prompt,
+      },
+    ]);
+    return response.value;
   }
 
   /**
@@ -60,30 +52,15 @@ export class TerminalInterface {
    * @returns Promessa que resolve para true (sim) ou false (não)
    */
   async confirm(prompt: string): Promise<boolean> {
-    let response: string;
-
-    do {
-      response = await this.input(`${prompt} (s/n)`);
-      response = response.toLowerCase().trim();
-
-      if (
-        response !== "s" &&
-        response !== "n" &&
-        response !== "sim" &&
-        response !== "não" &&
-        response !== "nao"
-      ) {
-        this.printError("Por favor, responda com 's' ou 'n'");
-      }
-    } while (
-      response !== "s" &&
-      response !== "n" &&
-      response !== "sim" &&
-      response !== "não" &&
-      response !== "nao"
-    );
-
-    return response === "s" || response === "sim";
+    const response = await inquirer.prompt([
+      {
+        type: "confirm",
+        name: "value",
+        message: prompt,
+        default: false,
+      },
+    ]);
+    return response.value;
   }
 
   /**
@@ -97,34 +74,21 @@ export class TerminalInterface {
     prompt: string,
     displayFn?: (option: T) => string,
   ): Promise<T> {
-    console.log(prompt);
+    const choices = options.map((option) => ({
+      name: displayFn ? displayFn(option) : String(option),
+      value: option,
+    }));
 
-    options.forEach((option, index) => {
-      console.log(
-        `${index + 1}. ${displayFn ? displayFn(option) : String(option)}`,
-      );
-    });
+    const response = await inquirer.prompt([
+      {
+        type: "list",
+        name: "value",
+        message: prompt,
+        choices,
+      },
+    ]);
 
-    let selection: number;
-
-    do {
-      const input = await this.input("Digite o número da opção desejada");
-      selection = Number.parseInt(input, 10) - 1;
-
-      if (
-        Number.isNaN(selection) ||
-        selection < 0 ||
-        selection >= options.length
-      ) {
-        this.printError("Opção inválida, tente novamente");
-      }
-    } while (
-      Number.isNaN(selection) ||
-      selection < 0 ||
-      selection >= options.length
-    );
-
-    return options[selection];
+    return response.value;
   }
 
   /**
@@ -149,6 +113,6 @@ export class TerminalInterface {
    * Fecha a interface do terminal
    */
   close(): void {
-    this.rl.close();
+    // Inquirer não precisa de cleanup explícito
   }
 }
