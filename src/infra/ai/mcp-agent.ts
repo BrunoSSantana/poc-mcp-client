@@ -24,8 +24,8 @@ interface MCPTool {
  */
 interface LLMConfig {
   type: LLMProvider;
-  apiKey?: string;
-  model?: string;
+  apiKey: string;
+  model: string;
 }
 
 /**
@@ -580,14 +580,14 @@ class SchemaValidator {
 function createLLMService(config: LLMConfig): LLMService {
   if (config.type === "openai") {
     return new OpenAIService(
-      config.apiKey || process.env.OPENAI_API_KEY || "",
+      config.apiKey,
       config.model,
     );
   }
 
   if (config.type === "claude") {
     return new AnthropicService(
-      config.apiKey || process.env.ANTHROPIC_API_KEY || "",
+      config.apiKey,
       config.model,
     );
   }

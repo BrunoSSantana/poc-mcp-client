@@ -22,7 +22,7 @@ Crie o arquivo `.env` na raiz do projeto com base no `.env.example`:
 
 ```
 # Necessário para o modelo Claude
-ANTHROPIC_API_KEY=sua_chave_api_anthropic
+CLAUDE_API_KEY=sua_chave_api_anthropic
 
 # Necessário para o modelo GPT
 OPENAI_API_KEY=sua_chave_api_openai

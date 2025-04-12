@@ -1,4 +1,4 @@
-import type { AIModelConfig } from "@domain/ai-model.js";
+import type { AIModelConfig, AIModelType } from "@domain/ai-model.js";
 import type { MCPConfig, MCPServerConfig } from "@domain/mcp-config.js";
 import { getAvailableModelTypes } from "@infra/ai/ai-agent-factory.js";
 import { TerminalInterface } from "@interface/terminal-interface.js";
@@ -44,7 +44,7 @@ export class ModelConfigManager {
     const availableModels = getAvailableModelTypes();
     const selectedModel = await this.terminal.selectAIModel(availableModels);
 
-    const { apiKey, model, mcpConfig } = await this.configureMCPParams();
+    const { apiKey, model, mcpConfig } = await this.configureMCPParams(selectedModel);
 
     this.terminal.print(`\nConfigurando modelo: ${selectedModel}...`);
 
@@ -57,8 +57,8 @@ export class ModelConfigManager {
       },
     };
 
-    await this.configureModelSpecificParams(config);
-
+/*     await this.configureModelSpecificParams(config);
+ */
     return config;
   }
 
@@ -66,7 +66,7 @@ export class ModelConfigManager {
    * Configura parâmetros específicos para cada tipo de modelo
    * @param config - Configuração do modelo a ser atualizada
    */
-  private async configureModelSpecificParams(
+/*   private async configureModelSpecificParams(
     config: AIModelConfig,
   ): Promise<void> {
     const useCustomConfig = await this.terminal.confirm(
@@ -87,13 +87,13 @@ export class ModelConfigManager {
       default:
         throw new Error(`Modelo não suportado: ${config.type}`);
     }
-  }
+  } */
 
   /**
    * Configura parâmetros específicos para o modelo Claude
    * @param config - Configuração do modelo a ser atualizada
    */
-  private async configureClaudeParams(config: AIModelConfig): Promise<void> {
+/*   private async configureClaudeParams(config: AIModelConfig): Promise<void> {
     const model = await this.terminal.input(
       "Modelo Claude (deixe em branco para usar o padrão 'claude-3-5-sonnet-20241022')",
     );
@@ -110,15 +110,15 @@ export class ModelConfigManager {
     if (apiKey) {
       config.params.apiKey = apiKey;
     } else {
-      config.params.apiKey = process.env.ANTHROPIC_API_KEY ?? "";
+      config.params.apiKey = process.env.CLAUDE_API_KEY ?? "";
     }
-  }
+  } */
 
   /**
    * Configura parâmetros específicos para o modelo OpenAI
    * @param config - Configuração do modelo a ser atualizada
    */
-  private async configureOpenAIParams(config: AIModelConfig): Promise<void> {
+/*   private async configureOpenAIParams(config: AIModelConfig): Promise<void> {
     const model = await this.terminal.input(
       "Modelo OpenAI (deixe em branco para usar o padrão 'gpt-4o')",
     );
@@ -136,20 +136,20 @@ export class ModelConfigManager {
     } else {
       config.params.apiKey = process.env.OPENAI_API_KEY ?? "";
     }
-  }
+  } */
 
   /**
    * Configura parâmetros específicos para o modelo MCP
    * @param config - Configuração do modelo a ser atualizada
    */
-  private async configureMCPParams(): Promise<{
+  private async configureMCPParams(aiModel: AIModelType): Promise<{
     apiKey: string;
     model: string;
     mcpConfig: MCPServerConfig;
   }> {
     // Usar valores das variáveis de ambiente
-    const apiKey = process.env.MCP_API_KEY ?? "";
-    const model = process.env.MCP_MODEL ?? "mcp-default";
+    const apiKey = process.env[`${aiModel.toUpperCase()}_API_KEY`] ?? "";
+    const model = process.env[`${aiModel.toUpperCase()}_MODEL`] ?? "";
 
     if (!this.mcpConfig) {
       this.terminal.printError(

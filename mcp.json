@@ -1,36 +1,5 @@
 {
   "mcpServers": {
-    "Playwright": {
-      "command": "npx",
-      "args": [
-        "-y",
-        "@smithery/cli@latest",
-        "run",
-        "@executeautomation/playwright-mcp-server",
-        "--config",
-        "\"{}\""
-      ]
-    },
-    "Operations": {
-      "command": "node",
-      "args": [
-        "/home/btuno/www/projects/ai/poc-mcp-server/src/index.ts"
-      ],
-      "env": {
-        "GRAPHQL_API": "https://titmgakjdhpsrkvaclef.supabase.co/graphql/v1",
-        "API_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRpdG1nYWtqZGhwc3JrdmFjbGVmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDMzNDE5OTUsImV4cCI6MjA1ODkxNzk5NX0.kbmZ0rbttSidrCHb2u6WWD5ummygL4Kb23usFXzv0Xo"
-      }
-    },
-    "Ops": {
-      "command": "node",
-      "args": [
-        "/home/btuno/www/projects/ai/poc-simple-mcp-server/dist/index.js"
-      ],
-      "env": {
-        "GRAPHQL_API": "https://titmgakjdhpsrkvaclef.supabase.co/graphql/v1",
-        "API_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRpdG1nYWtqZGhwc3JrdmFjbGVmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDMzNDE5OTUsImV4cCI6MjA1ODkxNzk5NX0.kbmZ0rbttSidrCHb2u6WWD5ummygL4Kb23usFXzv0Xo"
-      }
-    },
     "poc-simple-mcp-server": {
       "command": "npm",
       "args": [
