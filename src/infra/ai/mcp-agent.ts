@@ -31,7 +31,7 @@ interface LLMConfig {
 /**
  * Configuração para o MCP Client
  */
-interface MCPClientConfig {
+export interface MCPClientConfig {
 	command: string;
 	args: string[];
 }
@@ -45,7 +45,6 @@ abstract class LLMService {
 	abstract analyzeUserIntent(
 		message: string,
 		tools: MCPTool[],
-		defaultToolName: string,
 	): Promise<ToolSelectionResult>;
 	abstract generateResponse(
 		userMessage: string,
@@ -80,7 +79,6 @@ abstract class BaseLLMService implements LLMService {
 	abstract analyzeUserIntent(
 		message: string,
 		tools: MCPTool[],
-		defaultToolName: string,
 	): Promise<ToolSelectionResult>;
 	abstract generateResponse(
 		userMessage: string,
@@ -95,7 +93,6 @@ abstract class BaseLLMService implements LLMService {
 	protected generateToolSelectionPrompt(
 		userMessage: string,
 		tools: MCPTool[],
-		defaultToolName: string,
 	): string {
 		const toolsDescription = tools
 			.map((tool) => {
@@ -126,11 +123,11 @@ Analise a mensagem do usuário e:
 Responda APENAS com um objeto JSON com o seguinte formato:
 {
   "toolName": "nome_da_ferramenta",
-  "reason": "explicação curta sobre por que esta ferramenta é apropriada",
+  "reason": "explicação detalhada sobre por que esta ferramenta é a mais apropriada para a solicitação",
   "parameters": { objeto com os parâmetros extraídos da mensagem }
 }
 
-Se nenhuma ferramenta específica for mencionada ou se a intenção não estiver clara, use a ferramenta padrão "${defaultToolName}" com a mensagem completa como parâmetro.
+IMPORTANTE: Você DEVE selecionar uma ferramenta apropriada entre as ferramentas disponíveis. Não selecione uma ferramenta que não exista na lista. A solicitação será rejeitada se não for possível identificar a ferramenta correta.
 `;
 	}
 
@@ -196,18 +193,13 @@ class OpenAIService extends BaseLLMService {
 	async analyzeUserIntent(
 		message: string,
 		tools: MCPTool[],
-		defaultToolName: string,
 	): Promise<ToolSelectionResult> {
 		if (!this.client) {
 			throw new Error("OpenAI client not initialized");
 		}
 
 		try {
-			const prompt = this.generateToolSelectionPrompt(
-				message,
-				tools,
-				defaultToolName,
-			);
+			const prompt = this.generateToolSelectionPrompt(message, tools);
 
 			const response = await this.client.chat.completions.create({
 				model: this.model,
@@ -237,13 +229,9 @@ class OpenAIService extends BaseLLMService {
 
 			// Verificar se a ferramenta selecionada existe
 			if (!tools.some((tool) => tool.name === result.toolName)) {
-				console.warn(
-					`Ferramenta "${result.toolName}" selecionada pelo OpenAI não existe. Usando ferramenta padrão.`,
+				throw new Error(
+					`Ferramenta "${result.toolName}" selecionada pelo OpenAI não existe`,
 				);
-				return {
-					toolName: defaultToolName,
-					params: { message },
-				};
 			}
 
 			return {
@@ -251,11 +239,15 @@ class OpenAIService extends BaseLLMService {
 				params: result.parameters,
 			};
 		} catch (error) {
-			console.warn("Erro ao analisar resposta do OpenAI:", error);
-			return {
-				toolName: defaultToolName,
-				params: { message },
-			};
+			console.error("Erro ao analisar resposta do OpenAI:", error);
+			if (tools.length === 0) {
+				throw new Error(
+					"Não há ferramentas disponíveis para processar a solicitação",
+				);
+			}
+			throw new Error(
+				"Não foi possível determinar a ferramenta apropriada para a solicitação do OpenAI",
+			);
 		}
 	}
 
@@ -331,18 +323,13 @@ class AnthropicService extends BaseLLMService {
 	async analyzeUserIntent(
 		message: string,
 		tools: MCPTool[],
-		defaultToolName: string,
 	): Promise<ToolSelectionResult> {
 		if (!this.client) {
 			throw new Error("Anthropic client not initialized");
 		}
 
 		try {
-			const prompt = this.generateToolSelectionPrompt(
-				message,
-				tools,
-				defaultToolName,
-			);
+			const prompt = this.generateToolSelectionPrompt(message, tools);
 
 			const response = await this.client.messages.create({
 				model: this.model,
@@ -380,13 +367,9 @@ class AnthropicService extends BaseLLMService {
 
 			// Verificar se a ferramenta selecionada existe
 			if (!tools.some((tool) => tool.name === result.toolName)) {
-				console.warn(
-					`Ferramenta "${result.toolName}" selecionada pelo Anthropic não existe. Usando ferramenta padrão.`,
+				throw new Error(
+					`Ferramenta "${result.toolName}" selecionada pelo Anthropic não existe`,
 				);
-				return {
-					toolName: defaultToolName,
-					params: { message },
-				};
 			}
 
 			return {
@@ -394,11 +377,15 @@ class AnthropicService extends BaseLLMService {
 				params: result.parameters,
 			};
 		} catch (error) {
-			console.warn("Erro ao analisar resposta do Anthropic:", error);
-			return {
-				toolName: defaultToolName,
-				params: { message },
-			};
+			console.error("Erro ao analisar resposta do Anthropic:", error);
+			if (tools.length === 0) {
+				throw new Error(
+					"Não há ferramentas disponíveis para processar a solicitação",
+				);
+			}
+			throw new Error(
+				"Não foi possível determinar a ferramenta apropriada para a solicitação do Anthropic",
+			);
 		}
 	}
 
@@ -463,20 +450,28 @@ class SimpleIntentService implements LLMService {
 	async analyzeUserIntent(
 		message: string,
 		tools: MCPTool[],
-		defaultToolName: string,
 	): Promise<ToolSelectionResult> {
-		// Exemplo simples: verifica se a mensagem menciona explicitamente uma ferramenta
-		let toolName = defaultToolName;
 		const params: Record<string, unknown> = { message };
 
+		if (tools.length === 0) {
+			throw new Error(
+				"Não há ferramentas disponíveis para processar a solicitação",
+			);
+		}
+
+		// Tenta encontrar uma ferramenta mencionada explicitamente
 		for (const tool of tools) {
 			if (message.toLowerCase().includes(`use ${tool.name.toLowerCase()}`)) {
-				toolName = tool.name;
-				break;
+				return {
+					toolName: tool.name,
+					params: { message },
+				};
 			}
 		}
 
-		return { toolName, params };
+		throw new Error(
+			"Não foi possível determinar a ferramenta apropriada para a solicitação",
+		);
 	}
 
 	async generateResponse(
@@ -607,36 +602,19 @@ function createLLMService(config: LLMConfig): LLMService {
 export class MCPAgent implements AIAgent {
 	private client: Client | null = null;
 	private transport: StdioClientTransport | null = null;
-	private readonly mcpConfig: MCPClientConfig;
-	private readonly defaultToolName: string;
 	private availableTools: MCPTool[] = [];
 	private readonly llmService: LLMService;
 	private readonly validator: SchemaValidator;
 
 	/**
 	 * Cria uma instância do agente MCP
-	 * @param config - Configuração para o MCP (opcional, usa valores padrão se não fornecida)
-	 * @param defaultToolName - Nome da ferramenta padrão a ser usada (opcional, usa 'get_employees' por padrão)
+	 * @param mcpConfig - Configuração para o MCP Client
 	 * @param llmConfig - Configuração para o LLM utilizado na interpretação de mensagens
 	 */
 	constructor(
-		config?: MCPClientConfig,
-		defaultToolName = "get_employees",
-		llmConfig: LLMConfig = { type: "anthropic" },
+		private readonly mcpConfig: MCPClientConfig,
+		llmConfig: LLMConfig,
 	) {
-		this.mcpConfig = config || {
-			command: "npm",
-			args: [
-				"exec",
-				"--",
-				"@smithery/cli@latest",
-				"run",
-				"@BrunoSSantana/poc-simple-mcp-server",
-				"--config",
-				'{"apiKey":"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRpdG1nYWtqZGhwc3JrdmFjbGVmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDMzNDE5OTUsImV4cCI6MjA1ODkxNzk5NX0.kbmZ0rbttSidrCHb2u6WWD5ummygL4Kb23usFXzv0Xo","graphQLApi":"https://titmgakjdhpsrkvaclef.supabase.co/graphql/v1"}',
-			],
-		};
-		this.defaultToolName = defaultToolName;
 		this.llmService = createLLMService(llmConfig);
 		this.validator = new SchemaValidator();
 	}
@@ -670,13 +648,9 @@ export class MCPAgent implements AIAgent {
 				this.availableTools.map((tool) => tool.name).join(", "),
 			);
 
-			// Verifica se a ferramenta padrão está disponível
-			if (
-				!this.availableTools.some((tool) => tool.name === this.defaultToolName)
-			) {
-				console.warn(
-					`Aviso: A ferramenta padrão "${this.defaultToolName}" não está disponível. Ferramentas disponíveis: ${this.availableTools.map((tool) => tool.name).join(", ")}`,
-				);
+			// Verifica se há ferramentas disponíveis
+			if (this.availableTools.length === 0) {
+				console.warn("Aviso: Nenhuma ferramenta disponível no servidor MCP.");
 			}
 
 			// Inicializa o serviço LLM
@@ -714,14 +688,17 @@ export class MCPAgent implements AIAgent {
 			return await this.llmService.analyzeUserIntent(
 				message,
 				this.availableTools,
-				this.defaultToolName,
 			);
 		} catch (error) {
-			console.warn(
-				"Erro ao interpretar mensagem, usando ferramenta padrão:",
-				error,
+			console.error("Erro ao interpretar mensagem do usuário:", error);
+			if (this.availableTools.length === 0) {
+				throw new Error(
+					"Não há ferramentas disponíveis no servidor MCP para processar a solicitação",
+				);
+			}
+			throw new Error(
+				"Não foi possível determinar a ferramenta apropriada para a solicitação",
 			);
-			return { toolName: this.defaultToolName, params: { message } };
 		}
 	}
 
@@ -761,9 +738,14 @@ export class MCPAgent implements AIAgent {
 			// Processa a resposta do MCP usando LLM para criar uma resposta contextualizada
 			return await this.llmService.generateResponse(message, toolName, result);
 		} catch (error) {
-			console.error("Error sending message to MCP server:", error);
+			console.error("Erro ao interpretar mensagem do usuário:", error);
+			if (this.availableTools.length === 0) {
+				throw new Error(
+					"Não há ferramentas disponíveis no servidor MCP para processar a solicitação",
+				);
+			}
 			throw new Error(
-				`Failed to get response from MCP server: ${(error as Error).message}`,
+				"Não foi possível determinar a ferramenta apropriada para a solicitação",
 			);
 		}
 	}

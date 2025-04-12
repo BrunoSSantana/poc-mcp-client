@@ -1,7 +1,7 @@
 import type { AIAgent } from "@domain/ai-agent.js";
 import type { AIModelConfig, AIModelType } from "@domain/ai-model.js";
 import { AnthropicAgent } from "./anthropic-agent.js";
-import { MCPAgent } from "./mcp-agent.js";
+import { MCPAgent, type MCPClientConfig } from "./mcp-agent.js";
 import { OpenAIAgent } from "./openai-agent.js";
 
 /**
@@ -18,10 +18,18 @@ export function createAgent(config: AIModelConfig): AIAgent {
 			);
 		case "mcp":
 			return new MCPAgent(
-				config.params?.config as
-					| { command: string; args: string[] }
-					| undefined,
-				config.params?.toolName as string | undefined,
+				{
+					command: "npm",
+					args: [
+						"exec",
+						"--",
+						"@smithery/cli@latest",
+						"run",
+						"@BrunoSSantana/poc-simple-mcp-server",
+						"--config",
+						'{"apiKey":"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRpdG1nYWtqZGhwc3JrdmFjbGVmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDMzNDE5OTUsImV4cCI6MjA1ODkxNzk5NX0.kbmZ0rbttSidrCHb2u6WWD5ummygL4Kb23usFXzv0Xo","graphQLApi":"https://titmgakjdhpsrkvaclef.supabase.co/graphql/v1"}',
+					],
+				} as MCPClientConfig,
 				{
 					type: "anthropic",
 					apiKey: config.params?.apiKey as string | undefined,
