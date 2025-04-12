@@ -1,6 +1,6 @@
 import type { AIModelType } from "@domain/ai-model.js";
-import inquirer from "inquirer";
 import chalk from "chalk";
+import inquirer from "inquirer";
 
 /**
  * Interface para interação com o usuário via terminal

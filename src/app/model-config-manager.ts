@@ -1,9 +1,9 @@
+import * as fs from "node:fs";
+import * as path from "node:path";
 import type { AIModelConfig, AIModelType } from "@domain/ai-model.js";
 import type { MCPConfig, MCPServerConfig } from "@domain/mcp-config.js";
 import { getAvailableModelTypes } from "@infra/ai/ai-agent-factory.js";
 import { TerminalInterface } from "@interface/terminal-interface.js";
-import * as fs from "node:fs";
-import * as path from "node:path";
 
 /**
  * Gerenciador de configuração de modelos de IA
