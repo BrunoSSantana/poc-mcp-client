@@ -8,7 +8,7 @@ import { z } from "zod";
 /**
  * Tipo para identificar qual provedor de LLM usar
  */
-export type LLMProvider = "anthropic" | "openai";
+export type LLMProvider = "claude" | "openai";
 
 /**
  * Interface que representa uma ferramenta MCP disponível
@@ -585,7 +585,7 @@ function createLLMService(config: LLMConfig): LLMService {
     );
   }
 
-  if (config.type === "anthropic") {
+  if (config.type === "claude") {
     return new AnthropicService(
       config.apiKey || process.env.ANTHROPIC_API_KEY || "",
       config.model,

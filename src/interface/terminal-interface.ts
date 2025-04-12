@@ -135,7 +135,6 @@ export class TerminalInterface {
   async selectAIModel(availableModels: AIModelType[]): Promise<AIModelType> {
     const modelTypeMap: Record<AIModelType, string> = {
       claude: "Claude (Anthropic)",
-      mcp: "Model Context Protocol",
       openai: "GPT (OpenAI)",
     };
 

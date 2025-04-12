@@ -1,9 +1,4 @@
 import type { AIAgent } from "@domain/ai-agent.js";
-import type { AIModelConfig } from "@domain/ai-model.js";
-import {
-  createAgent,
-  getAvailableModelTypes,
-} from "@infra/ai/ai-agent-factory.js";
 import { TerminalInterface } from "@interface/terminal-interface.js";
 
 /**
@@ -11,13 +6,12 @@ import { TerminalInterface } from "@interface/terminal-interface.js";
  */
 export class ChatApp {
   private terminal: TerminalInterface;
-  private agent: AIAgent | null = null;
   private isRunning = false;
 
   /**
    * Cria uma instância da aplicação de chat
    */
-  constructor() {
+  constructor(private readonly agent: AIAgent) {
     this.terminal = new TerminalInterface();
   }
 
@@ -25,103 +19,20 @@ export class ChatApp {
    * Inicia a aplicação
    */
   async start(): Promise<void> {
-    try {
-      this.terminal.print("=== Terminal Chat com IA ===");
-      await this.setupAgent();
-      await this.runChatLoop();
-    } catch (error) {
-      this.terminal.printError(
-        `Erro ao iniciar a aplicação: ${(error as Error).message}`,
-      );
-    } finally {
-      await this.cleanup();
-    }
-  }
-
-  /**
-   * Configura o agente de IA com base na seleção do usuário
-   */
-  private async setupAgent(): Promise<void> {
-    const availableModels = getAvailableModelTypes();
-    const selectedModel = await this.terminal.selectAIModel(availableModels);
-
-    this.terminal.print(`\nConfigurando agente de IA: ${selectedModel}...`);
-
-    // Configuração base do modelo
-    const config: AIModelConfig = {
-      type: selectedModel,
-      params: {},
-    };
-
-    // Configurações específicas por modelo
-    if (selectedModel === "claude") {
-      // Perguntar se deseja usar configurações personalizadas
-      const useCustomConfig = await this.terminal.confirm(
-        "Deseja configurar parâmetros adicionais para o modelo Claude?",
-      );
-
-      if (useCustomConfig) {
-        const model = await this.terminal.input(
-          "Modelo Claude (deixe em branco para usar o padrão 'claude-3-5-sonnet-20241022')",
-        );
-        if (model && config.params) {
-          config.params.model = model;
-        }
-
-        const apiKey = await this.terminal.input(
-          "Chave de API da Anthropic (deixe em branco para usar a variável de ambiente)",
-        );
-        if (apiKey && config.params) {
-          config.params.apiKey = apiKey;
-        }
-      }
-    } else if (selectedModel === "mcp") {
-      // Perguntar se deseja usar configurações personalizadas
-      const useCustomConfig = await this.terminal.confirm(
-        "Deseja configurar parâmetros adicionais para o MCP?",
-      );
-
-      if (useCustomConfig) {
-        const toolName = await this.terminal.input(
-          "Nome da ferramenta para chat (deixe em branco para usar o padrão 'get_employees')",
-        );
-        if (toolName && config.params) {
-          config.params.toolName = toolName;
-        }
-      }
-    } else if (selectedModel === "openai") {
-      // Perguntar se deseja usar configurações personalizadas
-      const useCustomConfig = await this.terminal.confirm(
-        "Deseja configurar parâmetros adicionais para o modelo OpenAI?",
-      );
-
-      if (useCustomConfig) {
-        const model = await this.terminal.input(
-          "Modelo OpenAI (deixe em branco para usar o padrão 'gpt-4o')",
-        );
-        if (model && config.params) {
-          config.params.model = model;
-        }
-
-        const apiKey = await this.terminal.input(
-          "Chave de API da OpenAI (deixe em branco para usar a variável de ambiente)",
-        );
-        if (apiKey && config.params) {
-          config.params.apiKey = apiKey;
-        }
-      }
-    }
-
-    this.agent = createAgent(config);
+    this.terminal.print("=== Terminal Chat com IA ===");
 
     try {
       await this.agent.initialize();
       this.terminal.print("Agente de IA inicializado com sucesso!\n");
+      await this.runChatLoop();
+
     } catch (error) {
       this.terminal.printError(
         `Erro ao inicializar o agente: ${(error as Error).message}`,
       );
       throw error;
+    } finally {
+      await this.cleanup();
     }
   }
 
