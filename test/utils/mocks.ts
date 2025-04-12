@@ -1,9 +1,9 @@
-import type { AIAgentInterface } from "@domain/ai-model.js";
+import type { AIAgent } from "@domain/ai-agent.js";
 
 /**
  * Mock simples para AIAgent
  */
-export class MockAIAgent implements AIAgentInterface {
+export class MockAIAgent implements AIAgent {
   private initialized = false;
   private responses: Record<string, string>;
 
@@ -11,7 +11,7 @@ export class MockAIAgent implements AIAgentInterface {
     this.responses = responses;
   }
 
-  async init(): Promise<void> {
+  async initialize(): Promise<void> {
     this.initialized = true;
     return Promise.resolve();
   }

@@ -17,9 +17,8 @@ vi.mock("@infra/ai/ai-agent-factory.js", () => ({
 // Acessar propriedades privadas
 type PrivateChatApp = {
   terminal: MockTerminalInterface;
-  agent: MockAIAgent | null;
+  agent: MockAIAgent;
   isRunning: boolean;
-  setupAgent: () => Promise<void>;
   runChatLoop: () => Promise<void>;
   cleanup: () => Promise<void>;
 };
@@ -33,25 +32,28 @@ describe("ChatApp", () => {
     // Limpar mocks
     vi.clearAllMocks();
 
-    // Criar instância limpa para cada teste
-    chatApp = new ChatApp();
+    // Criar instância do agente mock
+    mockAgent = new MockAIAgent({ "test message": "test response" });
+
+    // Criar instância do chat app com o agente mock
+    chatApp = new ChatApp(mockAgent);
 
     // Acessar membros privados para testes
     const privateChatApp = chatApp as unknown as PrivateChatApp;
     mockTerminal = privateChatApp.terminal as MockTerminalInterface;
-    mockAgent = new MockAIAgent({ "test message": "test response" });
-    privateChatApp.agent = mockAgent;
   });
 
   describe("start", () => {
     it("should initialize the app with welcome message", async () => {
-      // Espionar métodos internos
-      const setupAgentSpy = vi
-        .spyOn(chatApp as unknown as PrivateChatApp, "setupAgent")
-        .mockResolvedValue();
+      // Espionar o método initialize do agente
+      const initializeSpy = vi.spyOn(mockAgent, "initialize");
+
+      // Espionar o método runChatLoop
       const runChatLoopSpy = vi
         .spyOn(chatApp as unknown as PrivateChatApp, "runChatLoop")
         .mockResolvedValue();
+
+      // Espionar o método cleanup
       const cleanupSpy = vi
         .spyOn(chatApp as unknown as PrivateChatApp, "cleanup")
         .mockResolvedValue();
@@ -61,18 +63,18 @@ describe("ChatApp", () => {
       // Verificar que a mensagem de boas-vindas foi exibida
       expect(mockTerminal.printedMessages[0]).toContain("Terminal Chat com IA");
 
+      // Verificar que o agente foi inicializado
+      expect(initializeSpy).toHaveBeenCalled();
+
       // Verificar que os métodos foram chamados na ordem correta
-      expect(setupAgentSpy).toHaveBeenCalled();
       expect(runChatLoopSpy).toHaveBeenCalled();
       expect(cleanupSpy).toHaveBeenCalled();
     });
 
     it("should handle errors during startup", async () => {
       const error = new Error("Test error");
-      vi.spyOn(
-        chatApp as unknown as PrivateChatApp,
-        "setupAgent",
-      ).mockRejectedValue(error);
+      vi.spyOn(mockAgent, "initialize").mockRejectedValue(error);
+
       const cleanupSpy = vi
         .spyOn(chatApp as unknown as PrivateChatApp, "cleanup")
         .mockResolvedValue();
