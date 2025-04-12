@@ -15,7 +15,9 @@
       "@infra/*": ["src/infra/*"],
       "@/*": ["src/*"]
     },
-    "moduleResolution": "NodeNext"
+    "moduleResolution": "NodeNext",
+    "noUnusedLocals": true,
+    "noUnusedParameters": true
   },
-  "include": ["src/**/*"]
+  "include": ["src/**/*", "test/**/*"]
 }
