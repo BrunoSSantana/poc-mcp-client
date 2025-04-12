@@ -451,8 +451,6 @@ class SimpleIntentService implements LLMService {
     message: string,
     tools: MCPTool[],
   ): Promise<ToolSelectionResult> {
-    const params: Record<string, unknown> = { message };
-
     if (tools.length === 0) {
       throw new Error(
         "Não há ferramentas disponíveis para processar a solicitação",
@@ -474,11 +472,7 @@ class SimpleIntentService implements LLMService {
     );
   }
 
-  async generateResponse(
-    userMessage: string,
-    toolName: string,
-    mcpResponse: unknown,
-  ): Promise<string> {
+  async generateResponse(mcpResponse: unknown): Promise<string> {
     // Retorna apenas os dados brutos
     return typeof mcpResponse === "object"
       ? JSON.stringify(mcpResponse, null, 2)

@@ -1,10 +1,7 @@
 /**
  * Configuração de ambiente para servidores MCP
  */
-export interface MCPEnvConfig {
-  GRAPHQL_API: string;
-  API_KEY: string;
-}
+export type MCPEnvConfig = Record<string, string>;
 
 /**
  * Configuração de um servidor MCP
