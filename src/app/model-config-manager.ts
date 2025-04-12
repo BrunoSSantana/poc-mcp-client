@@ -44,7 +44,8 @@ export class ModelConfigManager {
     const availableModels = getAvailableModelTypes();
     const selectedModel = await this.terminal.selectAIModel(availableModels);
 
-    const { apiKey, model, mcpConfig } = await this.configureMCPParams(selectedModel);
+    const { apiKey, model, mcpConfig } =
+      await this.configureMCPParams(selectedModel);
 
     this.terminal.print(`\nConfigurando modelo: ${selectedModel}...`);
 
@@ -57,8 +58,8 @@ export class ModelConfigManager {
       },
     };
 
-/*     await this.configureModelSpecificParams(config);
- */
+    /*     await this.configureModelSpecificParams(config);
+     */
     return config;
   }
 
@@ -66,7 +67,7 @@ export class ModelConfigManager {
    * Configura parâmetros específicos para cada tipo de modelo
    * @param config - Configuração do modelo a ser atualizada
    */
-/*   private async configureModelSpecificParams(
+  /*   private async configureModelSpecificParams(
     config: AIModelConfig,
   ): Promise<void> {
     const useCustomConfig = await this.terminal.confirm(
@@ -93,7 +94,7 @@ export class ModelConfigManager {
    * Configura parâmetros específicos para o modelo Claude
    * @param config - Configuração do modelo a ser atualizada
    */
-/*   private async configureClaudeParams(config: AIModelConfig): Promise<void> {
+  /*   private async configureClaudeParams(config: AIModelConfig): Promise<void> {
     const model = await this.terminal.input(
       "Modelo Claude (deixe em branco para usar o padrão 'claude-3-5-sonnet-20241022')",
     );
@@ -118,7 +119,7 @@ export class ModelConfigManager {
    * Configura parâmetros específicos para o modelo OpenAI
    * @param config - Configuração do modelo a ser atualizada
    */
-/*   private async configureOpenAIParams(config: AIModelConfig): Promise<void> {
+  /*   private async configureOpenAIParams(config: AIModelConfig): Promise<void> {
     const model = await this.terminal.input(
       "Modelo OpenAI (deixe em branco para usar o padrão 'gpt-4o')",
     );
@@ -155,7 +156,9 @@ export class ModelConfigManager {
       this.terminal.printError(
         "Configuração do MCP não encontrada. Usando configuração padrão.",
       );
-      throw new Error("Configuração do MCP não encontrada. Usando configuração padrão.");
+      throw new Error(
+        "Configuração do MCP não encontrada. Usando configuração padrão.",
+      );
     }
 
     // Listar servidores MCP disponíveis
@@ -165,20 +168,26 @@ export class ModelConfigManager {
       this.terminal.printError(
         "Nenhum servidor MCP encontrado na configuração. Usando configuração padrão.",
       );
-      throw new Error("Nenhum servidor MCP encontrado na configuração. Usando configuração padrão.");
+      throw new Error(
+        "Nenhum servidor MCP encontrado na configuração. Usando configuração padrão.",
+      );
     }
 
     // Obter configuração do servidor selecionado
-    const serverConfig = this.mcpConfig.mcpServers
+    const serverConfig = this.mcpConfig.mcpServers;
 
     // Atualizar configuração do MCP
-    const mcpConfig = Object.values(serverConfig).map((config) => ({
-      command: config.command,
-      args: config.args,
-    })).at(0);
+    const mcpConfig = Object.values(serverConfig)
+      .map((config) => ({
+        command: config.command,
+        args: config.args,
+      }))
+      .at(0);
 
     if (!mcpConfig) {
-      throw new Error("Configuração do MCP não encontrada. Usando configuração padrão.");
+      throw new Error(
+        "Configuração do MCP não encontrada. Usando configuração padrão.",
+      );
     }
 
     return {

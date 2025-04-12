@@ -25,7 +25,6 @@ export class ChatApp {
       await this.agent.initialize();
       this.terminal.print("Agente de IA inicializado com sucesso!\n");
       await this.runChatLoop();
-
     } catch (error) {
       this.terminal.printError(
         `Erro ao inicializar o agente: ${(error as Error).message}`,

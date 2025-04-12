@@ -579,17 +579,11 @@ class SchemaValidator {
  */
 function createLLMService(config: LLMConfig): LLMService {
   if (config.type === "openai") {
-    return new OpenAIService(
-      config.apiKey,
-      config.model,
-    );
+    return new OpenAIService(config.apiKey, config.model);
   }
 
   if (config.type === "claude") {
-    return new AnthropicService(
-      config.apiKey,
-      config.model,
-    );
+    return new AnthropicService(config.apiKey, config.model);
   }
 
   // Fallback para serviço simples
