@@ -710,8 +710,6 @@ export class MCPAgent implements AIAgent {
     try {
       // Interpreta a mensagem para determinar qual ferramenta usar
       const { toolName, params } = await this.interpretMessage(message);
-      console.log("Ferramenta selecionada:", toolName);
-      console.log("Parâmetros:", params);
 
       // Encontra a ferramenta selecionada
       const selectedTool = this.availableTools.find((t) => t.name === toolName);
@@ -721,7 +719,6 @@ export class MCPAgent implements AIAgent {
         selectedTool,
         params,
       );
-      console.log("Parâmetros validados:", validatedParams);
 
       // Chama a ferramenta com os parâmetros interpretados e validados
       const result = await this.client.callTool({
