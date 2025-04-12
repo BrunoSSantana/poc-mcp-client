@@ -1,4 +1,4 @@
-import type { AIModelConfig, AIModelType } from "@domain/ai-model.js";
+import type { AIModelConfig, AIModelType } from "@domain/entities/ai-model.js";
 import { describe, expect, it } from "vitest";
 
 describe("AIModel Domain Types", () => {

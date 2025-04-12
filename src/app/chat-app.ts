@@ -1,4 +1,4 @@
-import type { AIAgent } from "@domain/ai-agent.js";
+import type { AIAgent } from "@domain/entities/ai-agent.js";
 import { TerminalInterface } from "@interface/terminal-interface.js";
 
 /**

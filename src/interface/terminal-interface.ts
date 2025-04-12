@@ -1,4 +1,4 @@
-import type { AIModelType } from "@domain/ai-model.js";
+import type { AIModelType } from "@domain/entities/ai-model.js";
 import chalk from "chalk";
 import inquirer from "inquirer";
 

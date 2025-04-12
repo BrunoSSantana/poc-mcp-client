@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import type {
   AIModelConfig,
   AIModelType,
-} from "../../../src/domain/ai-model.js";
+} from "../../../src/domain/entities/ai-model.js";
 import {
   createAgent,
   getAvailableModelTypes,
