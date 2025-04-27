@@ -46,8 +46,8 @@ export class HttpInterface {
       }
 
       try {
-        const response = await this.agent.sendMessage(message);
-        return { response };
+        const answer = await this.agent.sendMessage(message);
+        return { answer };
       } catch (error) {
         request.log.error(error);
         reply.code(500);
