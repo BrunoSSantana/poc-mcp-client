@@ -6,6 +6,8 @@
   "type": "module",
   "scripts": {
     "start": "tsx src/index.ts",
+    "start:cli": "tsx src/index.ts cli",
+    "start:server": "tsx src/index.ts server",
     "build": "tsc",
     "format": "biome format --write .",
     "lint": "biome lint --write .",
@@ -30,9 +32,12 @@
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.39.0",
+    "@fastify/cors": "^11.0.1",
     "@modelcontextprotocol/sdk": "^1.8.0",
     "chalk": "^5.4.1",
+    "commander": "^13.1.0",
     "dotenv": "^16.4.7",
+    "fastify": "^5.3.2",
     "inquirer": "12.5.2",
     "openai": "^4.92.1",
     "zod": "^3.24.2"
