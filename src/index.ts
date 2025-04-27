@@ -1,25 +1,56 @@
-import { ChatApp } from "@app/chat-app.js";
-import { ModelConfigManager } from "@app/model-config-manager.js";
-import { createAgent } from "@infra/ai/ai-agent-factory.js";
+import { createCliApp, createHttpApp } from "@app/app-factory.js";
+import { Command } from "commander";
 import "dotenv/config";
 
+/**
+ * Main entry point for the application
+ */
 async function main(): Promise<void> {
-  const configManager = new ModelConfigManager();
+  const program = new Command();
 
-  try {
-    const config = await configManager.configureModel();
-    const agent = createAgent(config);
-    const chatApp = new ChatApp(agent);
-    await chatApp.start();
-  } catch (error) {
-    console.error("Erro ao iniciar a aplicação:", error);
-    process.exit(1);
-  } finally {
-    configManager.close();
+  program
+    .name("mcp-client")
+    .description("MCP Client - Chat with AI models")
+    .version("1.0.0");
+
+  program
+    .command("cli")
+    .description("Run in CLI mode")
+    .action(async () => {
+      try {
+        const cliApp = await createCliApp();
+        await cliApp.run();
+      } catch (error) {
+        console.error("CLI mode error:", error);
+        process.exit(1);
+      }
+    });
+
+  program
+    .command("server")
+    .description("Run as HTTP server")
+    .option("-p, --port <number>", "Port to listen on", "3000")
+    .action(async (options) => {
+      try {
+        const port = Number.parseInt(options.port, 10);
+        console.log(`Starting HTTP server on port ${port}...`);
+        const httpApp = await createHttpApp(port);
+        await httpApp.start();
+      } catch (error) {
+        console.error("HTTP server error:", error);
+        process.exit(1);
+      }
+    });
+
+  // Default to CLI mode if no command specified
+  if (process.argv.length <= 2) {
+    process.argv.push("cli");
   }
+
+  program.parse(process.argv);
 }
 
 main().catch((error) => {
-  console.error("Erro fatal:", error);
+  console.error("Fatal error:", error);
   process.exit(1);
 });
