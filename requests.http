@@ -1,0 +1,10 @@
+GET http://localhost:3000/health
+
+###
+
+POST http://localhost:3000/chat
+content-type: application/json
+    
+{
+    "message": "me traga uma lista com as moléculas usadas internamente"
+}

@@ -170,4 +170,99 @@ Para compilar o projeto:
 
 ```bash
 pnpm build
-``` 
+```
+
+# MCP Client Server
+
+A client server application for MCP (Model Context Protocol) with both CLI and HTTP interfaces.
+
+## Features
+
+- CLI interface for interactive chat
+- HTTP API server with Fastify
+- Support for different AI models
+
+## Installation
+
+```bash
+# Clone the repository
+git clone https://github.com/your-username/poc-mcp-client-server.git
+
+# Navigate to the project directory
+cd poc-mcp-client-server
+
+# Install dependencies
+pnpm install
+```
+
+## Usage
+
+### CLI Mode
+
+Run the application in CLI mode:
+
+```bash
+# Start in CLI mode (default)
+pnpm start
+
+# Explicitly specify CLI mode
+pnpm start:cli
+```
+
+#### CLI Commands
+
+```bash
+# Start interactive chat session
+mcp-client chat
+
+# Send a single message and get response
+mcp-client prompt "Your message here"
+```
+
+### HTTP Server Mode
+
+Run the application as an HTTP server:
+
+```bash
+# Start in HTTP server mode
+pnpm start:server
+```
+
+#### HTTP Endpoints
+
+- `GET /health` - Health check endpoint
+- `POST /chat` - Send a message to the AI agent
+  ```json
+  {
+    "message": "Your message here"
+  }
+  ```
+
+### Environment Configuration
+
+Create a `.env` file in the root directory with the following variables:
+
+```
+# OpenAI API configuration
+OPENAI_API_KEY=your_openai_api_key
+
+# Anthropic API configuration
+ANTHROPIC_API_KEY=your_anthropic_api_key
+```
+
+## Development
+
+```bash
+# Run tests
+pnpm test
+
+# Format code
+pnpm format
+
+# Lint code
+pnpm lint
+```
+
+## License
+
+ISC 
