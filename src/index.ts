@@ -16,9 +16,10 @@ async function main(): Promise<void> {
   program
     .command("cli")
     .description("Run in CLI mode")
-    .action(async () => {
+    .option("-l --llm <string>", "LLM Model", "claude")
+    .action(async (options) => {
       try {
-        const cliApp = await createCliApp();
+        const cliApp = await createCliApp(options.llm);
         await cliApp.run();
       } catch (error) {
         console.error("CLI mode error:", error);
@@ -30,11 +31,13 @@ async function main(): Promise<void> {
     .command("server")
     .description("Run as HTTP server")
     .option("-p, --port <number>", "Port to listen on", "3000")
+    .option("-l --llm <string>", "LLM Model", "claude")
     .action(async (options) => {
       try {
         const port = Number.parseInt(options.port, 10);
-        console.log(`Starting HTTP server on port ${port}...`);
-        const httpApp = await createHttpApp(port);
+        const llmModel = options.llm || "claude";
+        console.log(`Starting HTTP server on port ${port} and with `);
+        const httpApp = await createHttpApp(port, llmModel);
         await httpApp.start();
       } catch (error) {
         console.error("HTTP server error:", error);

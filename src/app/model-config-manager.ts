@@ -3,7 +3,6 @@ import type {
   MCPConfig,
   MCPServerConfig,
 } from "@domain/entities/mcp-config.js";
-import { getAvailableModelTypes } from "@infra/ai/ai-agent-factory.js";
 import { TerminalInterface } from "@interface/terminal-interface.js";
 import * as fs from "node:fs";
 import * as path from "node:path";
@@ -43,17 +42,14 @@ export class ModelConfigManager {
    * Solicita ao usuário que configure o modelo de IA
    * @returns Configuração do modelo de IA
    */
-  async configureModel(): Promise<AIModelConfig> {
-    const availableModels = getAvailableModelTypes();
-    const selectedModel = await this.terminal.selectAIModel(availableModels);
-
+  async configureModel(llmModel: AIModelType): Promise<AIModelConfig> {
     const { apiKey, model, mcpConfig } =
-      await this.configureMCPParams(selectedModel);
+      await this.configureMCPParams(llmModel);
 
-    this.terminal.print(`\nConfigurando modelo: ${selectedModel}...`);
+    this.terminal.print(`\nConfigurando modelo: ${llmModel}...`);
 
     const config: AIModelConfig = {
-      type: selectedModel,
+      type: llmModel,
       params: {
         apiKey,
         model,
