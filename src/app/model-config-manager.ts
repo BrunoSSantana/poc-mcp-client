@@ -1,41 +1,23 @@
 import type { AIModelConfig, AIModelType } from "@domain/entities/ai-model.js";
 import type {
-  MCPConfig,
-  MCPServerConfig,
+  MCPServerConfig
 } from "@domain/entities/mcp-config.js";
+import { GistGetMCPServersConfigRepository } from "@infra/repository";
 import { TerminalInterface } from "@interface/terminal-interface.js";
-import * as fs from "node:fs";
-import * as path from "node:path";
 
 /**
  * Gerenciador de configuração de modelos de IA
  */
 export class ModelConfigManager {
   private terminal: TerminalInterface;
-  private mcpConfig: MCPConfig | null = null;
-
+  
   /**
    * Cria uma nova instância do gerenciador de configuração
-   */
-  constructor() {
+  */
+ constructor(
+    private getMCPServersConfigRepository: GistGetMCPServersConfigRepository
+  ) {
     this.terminal = new TerminalInterface();
-    this.loadMCPConfig();
-  }
-
-  /**
-   * Carrega a configuração do MCP do arquivo mcp.json
-   */
-  private loadMCPConfig(): void {
-    try {
-      const configPath = path.resolve(process.cwd(), "mcp.json");
-      const configContent = fs.readFileSync(configPath, "utf-8");
-      this.mcpConfig = JSON.parse(configContent) as MCPConfig;
-    } catch (error) {
-      this.terminal.printError(
-        `Erro ao carregar configuração do MCP: ${(error as Error).message}`,
-      );
-      this.mcpConfig = null;
-    }
   }
 
   /**
@@ -57,8 +39,6 @@ export class ModelConfigManager {
       },
     };
 
-    /*     await this.configureModelSpecificParams(config);
-     */
     return config;
   }
 
@@ -75,7 +55,9 @@ export class ModelConfigManager {
     const apiKey = process.env[`${aiModel.toUpperCase()}_API_KEY`] ?? "";
     const model = process.env[`${aiModel.toUpperCase()}_MODEL`] ?? "";
 
-    if (!this.mcpConfig) {
+    const { config } = await  this.getMCPServersConfigRepository.process()
+
+    if (!config) {
       this.terminal.printError(
         "Configuração do MCP não encontrada. Usando configuração padrão.",
       );
@@ -85,7 +67,7 @@ export class ModelConfigManager {
     }
 
     // Listar servidores MCP disponíveis
-    const serverNames = Object.keys(this.mcpConfig.mcpServers);
+    const serverNames = Object.keys(config.mcpServers);
 
     if (serverNames.length === 0) {
       this.terminal.printError(
@@ -97,7 +79,7 @@ export class ModelConfigManager {
     }
 
     // Obter configuração do servidor selecionado
-    const serverConfig = this.mcpConfig.mcpServers;
+    const serverConfig = config.mcpServers;
 
     // Atualizar configuração do MCP
     const mcpConfig = Object.values(serverConfig)

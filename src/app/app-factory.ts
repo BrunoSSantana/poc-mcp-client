@@ -1,15 +1,17 @@
-import type { AIAgent } from "@domain/entities/ai-agent.js";
-import { AIModelType } from "@domain/entities/ai-model.js";
-import { createAgent } from "@infra/ai/ai-agent-factory.js";
-import { CliInterface } from "@interface/cli-interface.js";
-import { HttpInterface } from "@interface/http-interface.js";
-import { ModelConfigManager } from "./model-config-manager.js";
+import type { AIAgent } from "@domain/entities/ai-agent";
+import { AIModelType } from "@domain/entities/ai-model";
+import { createAgent } from "@infra/ai/ai-agent-factory";
+import { GistGetMCPServersConfigRepository } from "@infra/repository";
+import { CliInterface } from "@interface/cli-interface";
+import { HttpInterface } from "@interface/http-interface";
+import { ModelConfigManager } from "./model-config-manager";
 
 /**
  * Creates an instance of AI agent
  */
 export async function createAIAgent(llmModel: AIModelType): Promise<AIAgent> {
-  const configManager = new ModelConfigManager();
+  const getconfigMCPrepository = new GistGetMCPServersConfigRepository()
+  const configManager = new ModelConfigManager(getconfigMCPrepository);
 
   try {
     const config = await configManager.configureModel(llmModel);

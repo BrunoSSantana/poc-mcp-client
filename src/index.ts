@@ -20,7 +20,7 @@ async function main(): Promise<void> {
     .action(async (options) => {
       try {
         const cliApp = await createCliApp(options.llm);
-        await cliApp.run();
+        await cliApp.run(['chat']);
       } catch (error) {
         console.error("CLI mode error:", error);
         process.exit(1);

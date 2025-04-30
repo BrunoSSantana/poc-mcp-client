@@ -49,7 +49,7 @@ export class CliInterface {
   /**
    * Parses arguments and runs the CLI
    */
-  async run(args: string[] = process.argv): Promise<void> {
+  async run(args: string[]): Promise<void> {
     try {
       // Initialize the agent before parsing commands
       await this.agent.initialize();
